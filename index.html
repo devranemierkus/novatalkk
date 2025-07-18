@@ -1,248 +1,236 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Konuşan Yapay Zeka</title>
+  <meta charset="UTF-8" />
+  <title>Sesli YZ Sohbet Botu</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
+      background: #101010;
+      color: white;
+      text-align: center;
       margin: 0;
       padding: 0;
-      text-align: center;
     }
-
-    #avatar {
+    .avatar {
       margin-top: 40px;
+      position: relative;
       width: 150px;
       height: 150px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .face {
+      background: #222;
       border-radius: 50%;
-      background: url('https://i.imgur.com/OGvN5bO.png') no-repeat center/cover;
+      width: 100%;
+      height: 100%;
       position: relative;
     }
-
-    .eye, .mouth {
-      position: absolute;
-      background: black;
-      border-radius: 50%;
-    }
-
     .eye {
-      width: 10px;
-      height: 10px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
       top: 40px;
+      animation: blink 6s infinite;
     }
-
-    .eye.left {
-      left: 40px;
+    .eye.left { left: 35px; }
+    .eye.right { right: 35px; }
+    @keyframes blink {
+      0%, 95%, 100% { height: 20px; }
+      96%, 98% { height: 2px; }
     }
-
-    .eye.right {
-      right: 40px;
-    }
-
     .mouth {
-      width: 30px;
+      width: 50px;
       height: 10px;
-      bottom: 40px;
+      background: red;
+      border-radius: 10px;
+      position: absolute;
+      bottom: 35px;
       left: 50%;
       transform: translateX(-50%);
+      transition: height 0.2s ease;
     }
-
-    #micButton {
+    .talking .mouth {
+      height: 25px;
+    }
+    .mic-button {
       margin-top: 30px;
       width: 80px;
       height: 80px;
-      background: red;
+      background-color: #444;
       border: none;
       border-radius: 50%;
-      color: white;
-      font-size: 30px;
-    }
-
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    #log {
-      margin: 20px auto;
-      max-width: 500px;
-      height: 200px;
-      overflow-y: auto;
-      background: white;
-      border-radius: 10px;
-      padding: 10px;
-    }
-
-    #settings {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #ccc;
-      border-radius: 5px;
-      padding: 5px 10px;
+      background-image: url('https://img.icons8.com/ios-filled/50/ffffff/microphone.png');
+      background-size: 50%;
+      background-repeat: no-repeat;
+      background-position: center;
       cursor: pointer;
+      transition: background-color 0.3s;
+      user-select: none;
     }
-
-    #language {
+    .mic-button:active {
+      background-color: #666;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #ccc;
+    }
+    .logs {
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      background: #1a1a1a;
+      padding: 10px;
+      font-size: 14px;
+      user-select:none;
+    }
+    select {
       margin-top: 10px;
-    }
-
-    #privacy {
-      margin-top: 30px;
-      font-size: 12px;
-      color: gray;
+      padding: 5px;
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      user-select:none;
     }
   </style>
 </head>
 <body>
-
-<div id="settings" onclick="alert('Tema, dil ayarları vs. yakında!')">⚙️ Ayarlar</div>
-
-<div id="avatar">
-  <div class="eye left"></div>
-  <div class="eye right"></div>
-  <div class="mouth" id="mouth"></div>
-</div>
-
-<div id="status">Hazır</div>
-
-<button id="micButton">🎤</button>
-
-<div id="language">
-  <label for="lang">Dil Seç:</label>
-  <select id="lang">
-    <option value="tr-TR">Türkçe</option>
-    <option value="en-US">English</option>
-    <option value="zh-CN">中文 (Chinese)</option>
+  <h1>🎤 Sesli YZ Sohbet Botu</h1>
+  <div class="avatar" id="avatar">
+    <div class="face">
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+      <div class="mouth"></div>
+    </div>
+  </div>
+  <div class="status" id="status">Hazır</div>
+  <button class="mic-button" id="micBtn" title="Tıkla/Konuş ve Tekrar Tıkla/Kapat"></button>
+  <br>
+  <select id="langSelect" title="Dil Seçimi">
+    <option value="tr-TR">🇹🇷 Türkçe</option>
+    <option value="en-US">🇺🇸 English</option>
+    <option value="zh-CN">🇨🇳 中文 (Chinese)</option>
+    <option value="de-DE">🇩🇪 Deutsch (German)</option>
+    <option value="fr-FR">🇫🇷 Français (French)</option>
+    <option value="es-ES">🇪🇸 Español (Spanish)</option>
+    <option value="ja-JP">🇯🇵 日本語 (Japanese)</option>
+    <option value="ru-RU">🇷🇺 Русский (Russian)</option>
+    <option value="ar-SA">🇸🇦 العربية (Arabic)</option>
+    <option value="it-IT">🇮🇹 Italiano (Italian)</option>
   </select>
-</div>
+  <div class="logs" id="logs"></div>
 
-<div id="log"></div>
+  <script>
+    const micBtn = document.getElementById("micBtn");
+    const statusText = document.getElementById("status");
+    const logs = document.getElementById("logs");
+    const langSelect = document.getElementById("langSelect");
+    const avatar = document.getElementById("avatar");
 
-<div id="privacy">
-  Bu uygulama seslerinizi dinlemez ve hiçbir veriniz kaydedilmez.
-</div>
+    let recognition;
+    let isRecording = false;
 
-<script>
-let recognition;
-let isPressing = false;
-
-const micButton = document.getElementById('micButton');
-const statusText = document.getElementById('status');
-const log = document.getElementById('log');
-const langSelect = document.getElementById('lang');
-const mouth = document.getElementById('mouth');
-
-// Avatar hareketleri
-function speakAvatar(on) {
-  if (on) {
-    mouth.style.height = "25px";
-  } else {
-    mouth.style.height = "10px";
-  }
-}
-
-setInterval(() => {
-  document.querySelectorAll('.eye').forEach(e => {
-    e.style.visibility = Math.random() > 0.95 ? "hidden" : "visible";
-  });
-}, 300);
-
-// Basılı tutma
-micButton.addEventListener('mousedown', () => {
-  startListening();
-});
-micButton.addEventListener('mouseup', () => {
-  stopListening();
-});
-
-// Dokunmatik cihazlar için
-micButton.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  startListening();
-});
-micButton.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  stopListening();
-});
-
-function startListening() {
-  if (recognition) recognition.abort();
-  const lang = langSelect.value;
-
-  recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = lang;
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  statusText.textContent = "🎧 Dinliyorum...";
-  isPressing = true;
-
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    logMessage("Sen", transcript);
-    respond(transcript);
-  };
-
-  recognition.onerror = function() {
-    statusText.textContent = "⚠️ Ses algılanamadı.";
-  };
-
-  recognition.onend = function() {
-    if (isPressing) {
-      statusText.textContent = "❌ Erken bırakıldı.";
+    // Konuşma tanıma desteği kontrolü
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Tarayıcınız konuşma tanımayı desteklemiyor.");
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
     }
-  };
 
-  recognition.start();
-}
+    // Avatar ağız hareketi
+    function startTalking() {
+      avatar.classList.add("talking");
+    }
+    function stopTalking() {
+      avatar.classList.remove("talking");
+    }
 
-function stopListening() {
-  isPressing = false;
-  if (recognition) recognition.stop();
-}
+    // Log ekle
+    function addLog(who, text) {
+      const div = document.createElement("div");
+      div.innerHTML = `<b>${who}:</b> ${text}`;
+      logs.appendChild(div);
+      logs.scrollTop = logs.scrollHeight;
+    }
 
-function respond(text) {
-  statusText.textContent = "🤖 Yanıt oluşturuluyor...";
-  fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer SK-KEYİNİZİGİRİN",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: text }]
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    const reply = data.choices[0].message.content;
-    logMessage("Bot", reply);
-    speak(reply, langSelect.value);
-  })
-  .catch(() => {
-    statusText.textContent = "❌ Yanıt alınamadı.";
-  });
-}
+    // Bot yanıtı
+    function respond(message) {
+      statusText.textContent = "💬 Cevap veriliyor...";
+      startTalking();
 
-function speak(text, lang) {
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = lang;
-  speakAvatar(true);
-  utter.onend = () => {
-    speakAvatar(false);
-    statusText.textContent = "✅ Hazır";
-  };
-  speechSynthesis.speak(utter);
-}
+      // Buraya API veya hazır cevap eklenebilir.
+      // Aşağıda örnek basit cevaplar var, dilediğin gibi değiştir.
 
-function logMessage(speaker, message) {
-  log.innerHTML += `<b>${speaker}:</b> ${message}<br>`;
-  log.scrollTop = log.scrollHeight;
-}
-</script>
+      const lower = message.toLowerCase();
+
+      let reply = "Seni tam anlayamadım.";
+
+      if (lower.includes("merhaba")) reply = "Merhaba! Nasılsın?";
+      else if (lower.includes("adın ne")) reply = "Ben bir yapay zeka asistanıyım.";
+      else if (lower.includes("nasılsın")) reply = "Harikayım, teşekkür ederim!";
+      else if (lower.includes("hava")) reply = "Bugün hava çok güzel!";
+      else if (lower.includes("teşekkür")) reply = "Rica ederim!";
+
+      addLog("Bot", reply);
+
+      // TTS konuşma
+      const utterance = new SpeechSynthesisUtterance(reply);
+      utterance.lang = langSelect.value;
+
+      utterance.onend = () => {
+        stopTalking();
+        statusText.textContent = "Hazır";
+      };
+      speechSynthesis.speak(utterance);
+    }
+
+    // Konuşma başlat/durdur
+    function toggleRecognition() {
+      if (isRecording) {
+        recognition.stop();
+      } else {
+        recognition.lang = langSelect.value;
+        recognition.start();
+        statusText.textContent = "🎧 Dinliyorum...";
+      }
+    }
+
+    micBtn.addEventListener("click", () => {
+      toggleRecognition();
+    });
+
+    recognition.onstart = () => {
+      isRecording = true;
+      statusText.textContent = "🎧 Dinliyorum...";
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      statusText.textContent = "⏹️ Mikrofon kapalı.";
+    };
+
+    recognition.onerror = (event) => {
+      isRecording = false;
+      statusText.textContent = `⚠️ Hata: ${event.error}`;
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      addLog("Sen", transcript);
+      respond(transcript);
+    };
+
+    // Kopyalamayı engelle
+    document.body.style.userSelect = "none";
+    document.body.oncontextmenu = e => e.preventDefault();
+
+  </script>
 </body>
 </html>
