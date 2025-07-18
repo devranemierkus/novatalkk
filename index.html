@@ -1,736 +1,167 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gelişmiş Sesli Asistan</title>
-    <style>
-        /* TEMEL CSS STİLLERİ */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f2f5;
-            margin: 0;
-            color: #333;
-            transition: background-color 0.3s ease;
-        }
+  <meta charset="UTF-8">
+  <title>Bas-Konuş AI Botu</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+      background: #f0f0f0;
+      transition: background 0.3s;
+    }
 
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            text-align: center;
-            width: 90%;
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
+    #avatarContainer {
+      width: 200px;
+      height: 200px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background-image: url('https://i.imgur.com/9QxkVWI.png'); /* Avatar görseli */
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
 
-        h1 {
-            color: #007bff;
-            margin-bottom: 15px;
-            font-size: 2.2em;
-        }
+    #listenBtn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: crimson;
+      color: white;
+      font-size: 30px;
+      border: none;
+      cursor: pointer;
+      margin-top: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+    }
 
-        .avatar-container {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 4px solid #007bff;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            position: relative;
-            background-color: #e0f2f7;
-            /* Sprite sheet için arka plan resmi ve başlangıç pozisyonu */
-            /* BURAYI KENDİ SPRITE SHEET GÖRSELİNİZİN URL'İ İLE DEĞİŞTİRİN! */
-            background-image: url('https://i.ibb.co/CByy69t/default-avatar.png'); /* Bu bir örnek URL, değiştirilmeli */
-            background-size: auto 100%; /* Resmin yüksekliğini avatar container'a sığdır, genişliği otomatik ayarla */
-            background-repeat: no-repeat;
-            background-position: 0 0; /* Varsayılan kare (sol üst) */
-            transition: background-position 0.1s ease-in-out; /* Pozisyon geçişleri için yumuşaklık */
-        }
+    #listenBtn:active {
+      background-color: darkred;
+    }
 
-        /* Avatar Durumları için Arka Plan Pozisyonları */
-        /* Bu değerler sprite sheet'inizin boyutlarına ve kare sırasına göre değişecektir */
-        /* Varsayım: 150x150px'lik kareler, yatayda sıralı */
-        /*
-        ÖRNEK SPRITE SHEET YAPISI (Soldan Sağa Kareler ve Arka Plan Pozisyonları):
-        [Default (0px)] [Speaking1 (-150px)] [Speaking2 (-300px)] [Blinking (-450px)] [Listening (-600px)]
-        */
-        .avatar-container.default-state { background-position: 0 0; }
-        .avatar-container.speaking-frame-0-state { background-position: -150px 0; }
-        .avatar-container.speaking-frame-1-state { background-position: -300px 0; } /* Eğer 2 konuşma karesi varsa */
-        .avatar-container.blinking-state { background-position: -450px 0; }
-        .avatar-container.listening-state { background-position: -600px 0; }
-
-        .output-area {
-            min-height: 120px;
-            background-color: #e9ecef;
-            border: 1px solid #dee2e6;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            overflow-y: auto;
-            width: 100%;
-            box-sizing: border-box;
-            max-height: 250px; /* Sabit yükseklik, taşarsa scroll */
-        }
-
-        .message {
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            max-width: 85%;
-            word-wrap: break-word;
-            font-size: 0.95em;
-            line-height: 1.4;
-        }
-
-        .assistant-message {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            align-self: flex-start;
-        }
-
-        .user-message {
-            background-color: #d4edda;
-            color: #155724;
-            align-self: flex-end;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-        }
-
-        /* Mikrofon butonu için yuvarlak stil */
-        #mic-btn {
-            background-color: #28a745; /* Yeşil ton */
-            width: 80px; /* Genişlik ve yükseklik eşit */
-            height: 80px; /* Yuvarlak olması için */
-            border-radius: 50%; /* Yuvarlak şekil */
-            padding: 0; /* İç dolgu yok */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.9em; /* Yazı boyutu küçüldü */
-            line-height: 1.2; /* Satır yüksekliği */
-            flex-direction: column; /* Yazı ve ikon alt alta */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        #mic-btn svg {
-            font-size: 2.5em; /* SVG ikonu boyutu */
-            margin-bottom: 5px; /* İkon ile yazı arası boşluk */
-        }
-        #mic-btn:hover {
-            background-color: #218838;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
-        }
-        #mic-btn.active {
-            background-color: #dc3545; /* Kırmızı ton aktifken */
-            animation: pulse-red 1s infinite alternate; /* Aktifken kırmızı puls */
-        }
-        #mic-btn.active:hover {
-            background-color: #c82333;
-        }
-        #mic-btn:disabled {
-            background-color: #a0c2ed;
-            cursor: not-allowed;
-        }
-        #mic-btn.disabled-no-mic-access {
-            background-color: #6c757d; /* İzin yoksa gri */
-        }
-        #mic-btn.disabled-no-mic-access:hover {
-            background-color: #6c757d; /* Hover'da da gri kalır */
-            cursor: not-allowed;
-        }
-
-        @keyframes pulse-red {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-            50% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-        }
-
-        button, select {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            white-space: nowrap;
-        }
-        /* Mic butonu hariç diğer butonlar */
-        button:not(#mic-btn):hover, select:hover {
-            background-color: #0056b3;
-        }
-
-        button:active, select:active {
-            transform: translateY(1px);
-        }
-
-        button:disabled:not(#mic-btn) { /* Mic butonu hariç */
-            background-color: #a0c2ed;
-            cursor: not-allowed;
-        }
-
-        select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            padding-right: 40px;
-        }
-
-        .theme-buttons button {
-            background-color: #6c757d;
-            font-size: 0.9em;
-            padding: 8px 15px;
-        }
-        .theme-buttons button:hover {
-            background-color: #5a6268;
-        }
-
-        /* Tema CSS'leri */
-        .theme-dark {
-            background-color: #2c3e50;
-            color: #ecf0f1;
-        }
-        .theme-dark .container {
-            background-color: #34495e;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-        }
-        .theme-dark h1 {
-            color: #3498db;
-        }
-        .theme-dark .avatar-container {
-            border-color: #3498db;
-            background-color: #2980b9;
-        }
-        .theme-dark .output-area {
-            background-color: #445b73;
-            border-color: #556c84;
-            color: #ecf0f1;
-        }
-        .theme-dark .assistant-message {
-            background-color: #2980b9;
-            color: #ecf0f1;
-        }
-        .theme-dark .user-message {
-            background-color: #27ae60;
-            color: #ecf0f1;
-        }
-        .theme-dark button:not(#mic-btn), .theme-dark select {
-            background-color: #3498db;
-        }
-        .theme-dark button:not(#mic-btn):hover, .theme-dark select:hover {
-            background-color: #2980b9;
-        }
-        .theme-dark button:not(#mic-btn):disabled {
-            background-color: #7abfe5;
-        }
-        .theme-dark #mic-btn {
-             background-color: #27ae60; /* Dark tema mic */
-        }
-        .theme-dark #mic-btn:hover {
-             background-color: #229954;
-        }
-        .theme-dark #mic-btn.active {
-             background-color: #e74c3c; /* Dark tema mic aktif */
-        }
-        .theme-dark @keyframes pulse-red { /* Tema içindeki pulse animasyonu */
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-            50% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
-        }
-        .theme-dark .theme-buttons button {
-            background-color: #7f8c8d;
-        }
-        .theme-dark .theme-buttons button:hover {
-            background-color: #95a5a6;
-        }
-
-        /* Mikrofon İzin Uyarısı */
-        .permission-alert {
-            background-color: #ffeeba;
-            border: 1px solid #ffc107;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            color: #856404;
-            display: none; /* Varsayılan olarak gizli */
-            flex-direction: column;
-            gap: 10px;
-            align-items: center;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        .permission-alert button {
-            background-color: #007bff;
-            color: white;
-            padding: 8px 15px;
-            font-size: 0.9em;
-        }
-        .permission-alert button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    #log {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 18px;
+      min-height: 40px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container" id="assistant-container">
-        <h1>Sesli Asistanınız</h1>
 
-        <div class="avatar-container" id="avatar-container">
-            </div>
+  <h1>🤖 Sesli AI Asistan</h1>
 
-        <div class="output-area" id="output-area">
-            </div>
+  <div id="avatarContainer"></div>
 
-        <div class="permission-alert" id="permission-alert">
-            <p>Mikrofon erişimi reddedildi veya sağlanamadı.</p>
-            <button id="request-permission-btn">Tekrar İzin Ver</button>
-        </div>
+  <button id="listenBtn">🎤</button>
 
-        <div class="controls">
-            <button id="mic-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" height="30" viewBox="0 0 24 24" width="30" fill="currentColor">
-                    <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.2-3c0 3-2.54 5.1-5.2 5.1S6.8 14 6.8 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.8z"/>
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                </svg>
-                <span id="mic-btn-text">Basılı Tut</span>
-            </button>
-            <select id="voice-select"></select>
-        </div>
+  <div id="log">Basılı tut ve konuş!</div>
 
-        <div class="theme-buttons controls">
-            <button id="light-theme-btn">Açık Tema</button>
-            <button id="dark-theme-btn">Koyu Tema</button>
-        </div>
-    </div>
+  <script>
+    const listenBtn = document.getElementById('listenBtn');
+    const logDiv = document.getElementById('log');
 
-    <script>
-        const micBtn = document.getElementById('mic-btn');
-        const micBtnText = document.getElementById('mic-btn-text');
-        const voiceSelect = document.getElementById('voice-select');
-        const avatarContainer = document.getElementById('avatar-container');
-        const outputArea = document.getElementById('output-area');
-        const permissionAlert = document.getElementById('permission-alert');
-        const requestPermissionBtn = document.getElementById('request-permission-btn');
+    let recognition;
+    let isListening = false;
 
-        const lightThemeBtn = document.getElementById('light-theme-btn');
-        const darkThemeBtn = document.getElementById('dark-theme-btn');
+    // Ses tanıma kur
+    function setupRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Tarayıcınız ses tanımayı desteklemiyor.");
+        return;
+      }
 
-        // Web Speech API kontrolü
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            displayMessage("Üzgünüm, tarayıcınız konuşma tanımayı desteklemiyor. Lütfen Chrome gibi güncel bir tarayıcı kullanın.", 'assistant');
-            micBtn.disabled = true;
-            permissionAlert.style.display = 'flex'; // Hatayı göster
-            permissionAlert.querySelector('p').textContent = "Tarayıcınız konuşma tanımayı desteklemiyor.";
-            requestPermissionBtn.style.display = 'none'; // İzin butonu gizle
-        }
+      recognition = new SpeechRecognition();
+      recognition.lang = 'tr-TR';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const SpeechSynthesis = window.speechSynthesis;
+      recognition.onstart = () => {
+        isListening = true;
+        logDiv.textContent = "Dinliyorum...";
+      };
 
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.lang = 'tr-TR'; // Varsayılan dil
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        logDiv.textContent = `📥 Duyulan: "${transcript}"`;
+        respond(transcript);
+      };
 
-        let isMicPressed = false;
-        let selectedVoice = null;
-        let allVoices = [];
-        let blinkInterval;
-        let micAccessGranted = false; // Mikrofon erişim durumu
+      recognition.onerror = (event) => {
+        logDiv.textContent = "❌ Hata: " + event.error;
+      };
 
-        // --- AVATAR YÖNETİMİ (CSS Sprite) ---
-        // BU DEĞERLERİ KENDİ SPRITE SHEET'İNİZE GÖRE AYARLAYIN!
-        const AVATAR_SPRITE_WIDTH = 150; // Her bir avatar karesinin genişliği (piksel)
-        // AŞAĞIDAKİ URL'İ KENDİ SPRITE SHEET GÖRSELİNİZİN URL'İ İLE DEĞİŞTİRİN!
-        const AVATAR_SPRITE_URL = 'https://i.ibb.co/CByy69t/default-avatar.png'; // BU BİR ÖRNEK RESİM URL'İDİR!
+      recognition.onend = () => {
+        isListening = false;
+        logDiv.textContent += " | Dinleme bitti.";
+      };
+    }
 
-        // Avatar durumları için arka plan pozisyonları (yatay sprite sheet varsayımı)
-        const AVATAR_STATES = {
-            default: '0px 0',          // Varsayılan (ağız kapalı, göz açık)
-            speaking_0: `-${AVATAR_SPRITE_WIDTH}px 0`, // Ağız açık kare 1
-            speaking_1: `-${AVATAR_SPRITE_WIDTH * 2}px 0`, // Ağız açık kare 2 (eğer varsa)
-            blinking: `-${AVATAR_SPRITE_WIDTH * 3}px 0`, // Göz kırpma
-            listening: `-${AVATAR_SPRITE_WIDTH * 4}px 0`  // Dinleme (ses dalgası vb. görseli)
-        };
-        const SPEAKING_FRAMES = [AVATAR_STATES.speaking_0, AVATAR_STATES.speaking_1]; // Konuşma animasyonu kareleri
-        const SPEAKING_ANIM_SPEED = 120; // ms cinsinden kareler arası geçiş hızı (her kare 120ms gösterilir)
+    // Yanıt üret ve oku
+    function respond(input) {
+      let response = "";
 
-        function setAvatarState(state) {
-            // Önceki durum sınıflarını temizle
-            avatarContainer.className = 'avatar-container'; // Tüm sınıfları kaldır
+      const lowerInput = input.toLowerCase();
 
-            // Yeni durumu ata
-            const cssClass = state.replace(/_(\d+)/, '-frame-$1').toLowerCase() + '-state';
-            avatarContainer.classList.add(cssClass);
-            avatarContainer.style.backgroundPosition = AVATAR_STATES[state] || AVATAR_STATES.default;
+      if (lowerInput.includes("merhaba")) {
+        response = "Merhaba! Nasılsın?";
+      } else if (lowerInput.includes("adın ne")) {
+        response = "Ben ChatNova, senin sesli asistanınım.";
+      } else if (lowerInput.includes("kaç yaşındasın")) {
+        response = "Benim yaşım yapay zekaya göre ölçülüyor!";
+      } else {
+        response = "Seni tam anlayamadım, tekrar eder misin?";
+      }
 
-            // Sprite URL'ini burada ayarla (tekrar tekrar ayarlandığından emin olmak için)
-            avatarContainer.style.backgroundImage = `url('${AVATAR_SPRITE_URL}')`;
-        }
+      speak(response);
+    }
 
-        let speakingAnimationFrameId;
-        let currentSpeakingFrameIndex = 0;
-        let lastSpeakingFrameTime = 0;
+    // TTS konuşma
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'tr-TR';
+      const voices = speechSynthesis.getVoices();
+      const trVoice = voices.find(v => v.lang === 'tr-TR');
+      if (trVoice) utter.voice = trVoice;
+      speechSynthesis.speak(utter);
+    }
 
-        function animateSpeaking(timestamp) {
-            if (!lastSpeakingFrameTime) lastSpeakingFrameTime = timestamp;
-            const elapsed = timestamp - lastSpeakingFrameTime;
+    // Mikrofon izni
+    function requestMicrophoneAccess() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => console.log("🎤 Mikrofon izni verildi."))
+        .catch(() => alert("Mikrofon izni reddedildi."));
+    }
 
-            if (elapsed > SPEAKING_ANIM_SPEED) {
-                currentSpeakingFrameIndex = (currentSpeakingFrameIndex + 1) % SPEAKING_FRAMES.length;
-                avatarContainer.style.backgroundPosition = SPEAKING_FRAMES[currentSpeakingFrameIndex];
-                lastSpeakingFrameTime = timestamp;
-            }
-            speakingAnimationFrameId = requestAnimationFrame(animateSpeaking);
-        }
+    // Butona basılı tutulunca konuş
+    listenBtn.addEventListener("mousedown", () => {
+      if (!isListening) recognition.start();
+    });
 
-        function startSpeakingAnimation() {
-            if (SPEAKING_FRAMES.length > 0) {
-                currentSpeakingFrameIndex = 0;
-                lastSpeakingFrameTime = 0;
-                speakingAnimationFrameId = requestAnimationFrame(animateSpeaking);
-            } else {
-                setAvatarState('default'); // Eğer konuşma karesi yoksa varsayılan durum
-            }
-        }
+    // Bırakınca konuşmayı bitir
+    listenBtn.addEventListener("mouseup", () => {
+      if (isListening) recognition.stop();
+    });
 
-        function stopSpeakingAnimation() {
-            cancelAnimationFrame(speakingAnimationFrameId);
-            setAvatarState('default'); // Konuşma bitince varsayılan hale dön
-        }
+    // Dokunmatik cihazlar için
+    listenBtn.addEventListener("touchstart", () => {
+      if (!isListening) recognition.start();
+    });
 
-        function startBlinking() {
-            stopBlinking(); // Önceki interval'ı temizle
-            blinkInterval = setInterval(() => {
-                // Sadece asistan konuşmuyorsa ve mikrofon basılı değilse göz kırp
-                if (!SpeechSynthesis.speaking && !isMicPressed) {
-                    setAvatarState('blinking');
-                    setTimeout(() => {
-                        if (!SpeechSynthesis.speaking && !isMicPressed) {
-                            setAvatarState('default');
-                        }
-                    }, 200); // 200ms göz kırpma süresi
-                }
-            }, Math.random() * (4000 - 1500) + 1500); // 1.5-4 saniye arasında rastgele göz kırpma
-        }
+    listenBtn.addEventListener("touchend", () => {
+      if (isListening) recognition.stop();
+    });
 
-        function stopBlinking() {
-            clearInterval(blinkInterval);
-        }
+    // Yüklenince
+    window.onload = () => {
+      setupRecognition();
+      requestMicrophoneAccess();
+      window.speechSynthesis.onvoiceschanged = () => {}; // Ses listesini güncelle
+    };
+  </script>
 
-        // --- KONUŞMA VE SES YÖNETİMİ ---
-        function populateVoiceList() {
-            allVoices = SpeechSynthesis.getVoices().sort((a, b) => {
-                const aname = a.name.toUpperCase();
-                const bname = b.name.toUpperCase();
-                if (aname < bname) return -1;
-                if (aname > bname) return +1;
-                return 0;
-            });
-
-            voiceSelect.innerHTML = ''; // Önceki seçenekleri temizle
-
-            const defaultOption = document.createElement('option');
-            defaultOption.textContent = 'Otomatik Ses (Tarayıcı Varsayılanı)';
-            defaultOption.value = '';
-            voiceSelect.appendChild(defaultOption);
-
-            let foundDefaultLangVoice = false;
-            allVoices.forEach((voice) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.value = voice.name;
-
-                // Türkçe sesi varsayılan olarak seçmeye çalış
-                if (voice.lang.startsWith('tr') && !foundDefaultLangVoice) {
-                    option.selected = true;
-                    selectedVoice = voice;
-                    recognition.lang = voice.lang;
-                    foundDefaultLangVoice = true;
-                }
-                voiceSelect.appendChild(option);
-            });
-
-            // Eğer Türkçe ses bulunamazsa ilk sesi seç
-            if (!foundDefaultLangVoice && allVoices.length > 0) {
-                 selectedVoice = allVoices[0];
-                 voiceSelect.value = allVoices[0].name;
-                 recognition.lang = allVoices[0].lang;
-            }
-        }
-
-        if (SpeechSynthesis.onvoiceschanged !== undefined) {
-            SpeechSynthesis.onvoiceschanged = populateVoiceList;
-        } else {
-            setTimeout(populateVoiceList, 500);
-        }
-
-        voiceSelect.addEventListener('change', () => {
-            const voiceName = voiceSelect.value;
-            if (voiceName === '') {
-                selectedVoice = null;
-                recognition.lang = 'tr-TR';
-                speak("Ses seçimi otomatik olarak ayarlandı.");
-            } else {
-                selectedVoice = allVoices.find(voice => voice.name === voiceName);
-                if (selectedVoice) {
-                    recognition.lang = selectedVoice.lang;
-                    speak(`Ses başarıyla ${selectedVoice.name} olarak ayarlandı. Bu ses ${selectedVoice.lang} dilinde konuşur.`);
-                }
-            }
-        });
-
-        function speak(text) {
-            if (SpeechSynthesis.speaking) {
-                SpeechSynthesis.cancel();
-            }
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            } else {
-                 const defaultLangVoice = allVoices.find(v => v.lang.startsWith(recognition.lang.substring(0, 2)));
-                 if (defaultLangVoice) {
-                     utterance.voice = defaultLangVoice;
-                 }
-            }
-            utterance.pitch = 1;
-            utterance.rate = 1;
-
-            utterance.onstart = () => {
-                startSpeakingAnimation();
-                stopBlinking();
-            };
-
-            utterance.onend = () => {
-                stopSpeakingAnimation();
-                startBlinking();
-                // Konuşma bittiğinde, mikrofon basılı değilse tekrar dinlemeye geçme.
-                // Kullanıcının yeniden basılı tutmasını bekle.
-            };
-
-            utterance.onerror = (event) => {
-                console.error('Konuşma hatası:', event.error);
-                stopSpeakingAnimation();
-                startBlinking();
-            };
-            SpeechSynthesis.speak(utterance);
-        }
-
-        // --- MESAJ GÖRÜNTÜLEME ---
-        function displayMessage(text, type) {
-            const p = document.createElement('p');
-            p.textContent = text;
-            p.classList.add('message', `${type}-message`);
-            outputArea.appendChild(p);
-            outputArea.scrollTop = outputArea.scrollHeight;
-        }
-
-        // --- ASİSTANIN MANTIĞI ---
-        function processCommand(command) {
-            let response = "Üzgünüm, sizi tam olarak anlayamadım. Tekrar söyleyebilir misiniz?";
-            displayMessage(command, 'user');
-
-            if (command.includes("merhaba") || command.includes("selam")) {
-                response = "Merhaba! Size nasıl yardımcı olabilirim?";
-            } else if (command.includes("nasılsın")) {
-                response = "Ben bir yapay zekayım, bir hissiyatım yok ama iyi olduğumu söyleyebilirim. Siz nasılsınız?";
-            } else if (command.includes("saat kaç")) {
-                const now = new Date();
-                const hours = now.getHours();
-                const minutes = now.getMinutes();
-                response = `Şu an saat ${hours} ve ${minutes} dakika.`;
-            } else if (command.includes("bugün günlerden ne")) {
-                const days = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-                const today = new Date().getDay();
-                response = `Bugün ${days[today]}.`;
-            } else if (command.includes("teşekkürler") || command.includes("sağ ol")) {
-                response = "Rica ederim, ne demek. Başka bir isteğiniz var mıydı?";
-            } else if (command.includes("adın ne") || command.includes("kimsin")) {
-                response = "Benim adım Sesli Asistan. Sizin için buradayım.";
-            } else if (command.includes("kapat") || command.includes("git")) {
-                response = "Görüşürüz! Tekrar görüşmek üzere.";
-                speak(response);
-                micBtn.classList.remove('active');
-                micBtnText.textContent = 'Basılı Tut';
-                isMicPressed = false;
-                return;
-            } else if (command.includes("hava durumu")) {
-                 response = "Hava durumu bilgisi için internet bağlantısı ve konum bilgisi gereklidir. Bu özellik şu an için aktif değil, ancak üzerinde çalışıyorum.";
-            } else if (command.includes("müzik çal")) {
-                 response = "Üzgünüm, şu anda müzik çalma yeteneğim bulunmuyor.";
-            }
-            
-            displayMessage(response, 'assistant');
-            speak(response);
-        }
-
-        // --- KONUŞMA TANIMA OLAY YÖNETİCİLERİ ---
-        recognition.onstart = () => {
-            console.log('Ses tanıma başladı. Lütfen konuşun...');
-            displayMessage("Dinliyorum...", 'assistant');
-            micBtn.classList.add('active');
-            micBtnText.textContent = 'Dinliyor...';
-            setAvatarState('listening');
-            stopBlinking();
-        };
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
-            console.log('Algılanan komut:', transcript);
-            processCommand(transcript);
-        };
-
-        recognition.onend = () => {
-            console.log('Ses tanıma durduruldu.');
-            micBtn.classList.remove('active');
-            micBtnText.textContent = 'Basılı Tut';
-            // Sadece konuşma aktif değilse (yani asistan yanıt vermeyi bitirdiyse) varsayılan avaatar durumuna geç
-            if (!SpeechSynthesis.speaking) {
-                setAvatarState('default');
-                startBlinking();
-            }
-        };
-
-        recognition.onerror = (event) => {
-            console.error('Ses tanıma hatası:', event.error);
-            micBtn.classList.remove('active');
-            micBtnText.textContent = 'Basılı Tut';
-            setAvatarState('default');
-            startBlinking();
-
-            let errorMsg = 'Ses tanıma hatası oluştu.';
-            if (event.error === 'not-allowed') {
-                errorMsg = "Mikrofon erişimi reddedildi. Lütfen tarayıcınızın mikrofon kullanımına izin verdiğinizden emin olun.";
-                micAccessGranted = false; // İzin reddedildi
-                micBtn.classList.add('disabled-no-mic-access'); // Gri buton
-                micBtn.disabled = true;
-                permissionAlert.style.display = 'flex'; // Uyarıyı göster
-                permissionAlert.querySelector('p').textContent = "Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarınızdan izin verin.";
-
-            } else if (event.error === 'no-speech') {
-                errorMsg = "Konuşma algılanamadı. Tekrar deneyin.";
-            } else if (event.error === 'aborted') {
-                errorMsg = "Ses tanıma iptal edildi.";
-            }
-            displayMessage(errorMsg, 'assistant');
-        };
-
-        // --- MİKROFON İZİN YÖNETİMİ ---
-        async function requestMicrophoneAccess() {
-            try {
-                // Tarayıcıya mikrofon izni isteği gönder
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                micAccessGranted = true;
-                micBtn.disabled = false;
-                micBtn.classList.remove('disabled-no-mic-access');
-                permissionAlert.style.display = 'none'; // Uyarıyı gizle
-                displayMessage("Mikrofon erişimi başarıyla sağlandı. Benimle konuşmaya başlayabilirsiniz!", 'assistant');
-                stream.getTracks().forEach(track => track.stop()); // Mikrofonu hemen serbest bırak ki başkası kullanabilsin
-                speak("Mikrofon erişimi başarıyla sağlandı. Benimle konuşmaya başlayabilirsiniz!");
-            } catch (err) {
-                console.error('Mikrofon erişim hatası:', err);
-                micAccessGranted = false;
-                micBtn.disabled = true;
-                micBtn.classList.add('disabled-no-mic-access'); // Gri buton
-                permissionAlert.style.display = 'flex'; // Uyarıyı göster
-                permissionAlert.querySelector('p').textContent = "Mikrofon erişimi reddedildi. Lütfen tarayıcı ayarlarınızdan izin verin.";
-                displayMessage("Mikrofon erişimi reddedildi. Lütfen tarayıcınızın mikrofon kullanımına izin verdiğinizden emin olun.", 'assistant');
-            }
-        }
-
-        // --- MİKROFON BAS-KONUŞ İŞLEVSELLİĞİ ---
-        micBtn.addEventListener('mousedown', () => {
-            if (!micAccessGranted) {
-                displayMessage("Lütfen önce mikrofon erişimine izin verin.", 'assistant');
-                permissionAlert.style.display = 'flex'; // Uyarıyı göster
-                return;
-            }
-            if (!isMicPressed) {
-                isMicPressed = true;
-                recognition.start();
-            }
-        });
-
-        micBtn.addEventListener('mouseup', () => {
-            if (isMicPressed) {
-                isMicPressed = false;
-                recognition.stop();
-            }
-        });
-
-        // Mobil cihazlar için touch olayları
-        micBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!micAccessGranted) {
-                displayMessage("Lütfen önce mikrofon erişimine izin verin.", 'assistant');
-                permissionAlert.style.display = 'flex';
-                return;
-            }
-            if (!isMicPressed) {
-                isMicPressed = true;
-                recognition.start();
-            }
-        });
-
-        micBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (isMicPressed) {
-                isMicPressed = false;
-                recognition.stop();
-            }
-        });
-
-        // "Tekrar İzin Ver" butonu tıklama olayı
-        requestPermissionBtn.addEventListener('click', requestMicrophoneAccess);
-
-        // --- TEMA İŞLEVSELLİĞİ ---
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                document.body.classList.add('theme-dark');
-            } else {
-                document.body.classList.remove('theme-dark');
-            }
-        }
-
-        lightThemeBtn.addEventListener('click', () => applyTheme('light'));
-        darkThemeBtn.addEventListener('click', () => applyTheme('dark'));
-
-        // --- UYGULAMA YÜKLENDİĞİNDE ---
-        window.onload = () => {
-            // Mikrofon erişimini sayfa yüklenir yüklenmez iste
-            requestMicrophoneAccess();
-
-            // Avatarın arka plan resmini ayarla
-            avatarContainer.style.backgroundImage = `url('${AVATAR_SPRITE_URL}')`;
-            setAvatarState('default'); // Varsayılan avatar durumunu ayarla
-            populateVoiceList(); // Sesleri yükle
-            startBlinking(); // Uygulama başladığında göz kırpmayı başlat
-        };
-    </script>
 </body>
 </html>
