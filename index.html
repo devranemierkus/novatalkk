@@ -49,7 +49,7 @@
             background-color: #e0f2f7;
             /* Sprite sheet için arka plan resmi ve başlangıç pozisyonu */
             /* BURAYI KENDİ SPRITE SHEET GÖRSELİNİZİN URL'İ İLE DEĞİŞTİRİN! */
-            background-image: url('https://i.ibb.co/CByy69t/default-avatar.png');
+            background-image: url('https://i.ibb.co/CByy69t/default-avatar.png'); /* Bu bir örnek URL, değiştirilmeli */
             background-size: auto 100%; /* Resmin yüksekliğini avatar container'a sığdır, genişliği otomatik ayarla */
             background-repeat: no-repeat;
             background-position: 0 0; /* Varsayılan kare (sol üst) */
@@ -366,7 +366,7 @@
         // BU DEĞERLERİ KENDİ SPRITE SHEET'İNİZE GÖRE AYARLAYIN!
         const AVATAR_SPRITE_WIDTH = 150; // Her bir avatar karesinin genişliği (piksel)
         // AŞAĞIDAKİ URL'İ KENDİ SPRITE SHEET GÖRSELİNİZİN URL'İ İLE DEĞİŞTİRİN!
-        const AVATAR_SPRITE_URL = 'https://i.ibb.co/CByy69t/default-avatar.png';
+        const AVATAR_SPRITE_URL = 'https://i.ibb.co/CByy69t/default-avatar.png'; // BU BİR ÖRNEK RESİM URL'İDİR!
 
         // Avatar durumları için arka plan pozisyonları (yatay sprite sheet varsayımı)
         const AVATAR_STATES = {
@@ -414,7 +414,7 @@
                 lastSpeakingFrameTime = 0;
                 speakingAnimationFrameId = requestAnimationFrame(animateSpeaking);
             } else {
-                setAvatarState('default'); // Eğer konuşma karesi yoksa varsayılana dön
+                setAvatarState('default'); // Eğer konuşma karesi yoksa varsayılan durum
             }
         }
 
