@@ -1,172 +1,141 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nova AI Asistan</title>
+  <meta charset="UTF-8">
+  <title>Objeleri Tanı & Konuş!</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #121212;
-      color: white;
       margin: 0;
-      padding: 0;
+      background-color: #121212;
+      font-family: 'Segoe UI', sans-serif;
+      color: #eee;
       text-align: center;
-      transition: background 0.3s, color 0.3s;
     }
-    .container {
-      padding: 20px;
-    }
-    .avatar {
-      width: 150px;
-      margin: 10px auto;
-      animation: blink 6s infinite;
-    }
-    @keyframes blink {
-      0%, 97%, 100% { opacity: 1; }
-      98%, 99% { opacity: 0.4; }
-    }
-    .mic-btn {
-      width: 80px;
-      height: 80px;
-      background: #007bff;
-      border: none;
-      border-radius: 50%;
-      color: white;
-      font-size: 30px;
-      cursor: pointer;
-      outline: none;
-    }
-    .mic-btn:active {
-      background: #0056b3;
-    }
-    #response {
-      margin-top: 20px;
+    header {
+      background-color: #1f1f1f;
       padding: 10px;
-      background: #1e1e1e;
+      font-size: 22px;
+      color: #00ffaa;
+    }
+    video {
+      width: 640px;
+      height: 480px;
+      margin-top: 15px;
+      border: 2px solid #00ffaa;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      background-color: #00ffaa;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #output {
+      margin: 15px;
+      font-size: 18px;
+      white-space: pre-line;
+    }
+    #security-msg {
+      color: #f77;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    #settings {
+      margin-top: 30px;
+      padding: 10px;
+      background-color: #1a1a1a;
+      border: 1px solid #00ffaa;
       border-radius: 10px;
-      min-height: 60px;
     }
-    .settings, .language {
-      margin-top: 20px;
-    }
-    select, button {
-      padding: 8px;
-      margin: 5px;
+    select {
+      padding: 6px;
+      background-color: #333;
+      color: #eee;
+      border: none;
       border-radius: 5px;
-    }
-    .theme-light {
-      background: #f0f0f0;
-      color: #000;
+      margin: 5px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Iconic_image_of_an_AI_avatar.png/240px-Iconic_image_of_an_AI_avatar.png" class="avatar" id="avatar" alt="Bot Avatar"/>
-    
-    <h2 id="status">🟢 Hazır</h2>
-    <button class="mic-btn" id="micBtn">🎤</button>
-    <div id="response">Yanıt burada görünecek</div>
+  <header>🧠 Objeleri Tanı & Sesli Sohbet Yap</header>
 
-    <div class="language">
-      <label>Dil:</label>
-      <select id="langSelect">
-        <option value="tr-TR">Türkçe</option>
-        <option value="en-US">English</option>
-        <option value="zh-CN">中文</option>
-      </select>
-    </div>
+  <video id="video" autoplay muted playsinline></video><br>
+  <button onclick="startApp()">Başla</button>
+  <button onclick="startVoice()">Mikrofonu Aç</button>
 
-    <div class="settings">
-      <label>Tema:</label>
-      <button onclick="toggleTheme()">Değiştir</button>
-    </div>
+  <div id="output">Bekleniyor...</div>
+  <div id="security-msg">⚠️ Uygulama sadece lokal cihazda çalışır. Veriler depolanmaz.</div>
 
-    <div>
-      <button onclick="startCamera()">📷 Kamera Aç</button>
-      <video id="video" width="200" autoplay playsinline style="display:none;"></video>
-    </div>
-
-    <div style="margin-top:20px; font-size: 0.9em;">
-      🔐 Bu uygulama hiçbir sesi kaydetmez ve kişisel veri toplamaz.
-    </div>
+  <div id="settings">
+    <h3>⚙️ Ayarlar</h3>
+    Tema:
+    <select onchange="changeTheme(this.value)">
+      <option value="dark">Karanlık</option>
+      <option value="light">Açık</option>
+    </select>
+    Dil:
+    <select onchange="changeLang(this.value)">
+      <option value="tr">Türkçe</option>
+      <option value="en">English</option>
+    </select>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
   <script>
-    let theme = 'dark';
-    let recognizing = false;
-    const micBtn = document.getElementById("micBtn");
-    const statusEl = document.getElementById("status");
-    const responseEl = document.getElementById("response");
-    const langSelect = document.getElementById("langSelect");
+    let model;
+    let language = "tr";
 
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    micBtn.onmousedown = () => {
-      recognition.lang = langSelect.value;
-      recognition.start();
-      statusEl.textContent = "🎙️ Dinliyor...";
-    };
-
-    micBtn.onmouseup = () => {
-      recognition.stop();
-      statusEl.textContent = "⏳ Yanıt bekleniyor...";
-    };
-
-    recognition.onresult = async (event) => {
-      const transcript = event.results[0][0].transcript;
-      statusEl.textContent = "💬 Konuşuyor...";
-      const reply = await getGeminiResponse(transcript);
-      responseEl.textContent = reply;
-      speak(reply);
-      statusEl.textContent = "🟢 Hazır";
-    };
-
-    function speak(text) {
-      const msg = new SpeechSynthesisUtterance();
-      msg.text = text;
-      msg.lang = langSelect.value;
-      window.speechSynthesis.speak(msg);
-    }
-
-    function toggleTheme() {
-      if (theme === 'dark') {
-        document.body.classList.add("theme-light");
-        theme = 'light';
-      } else {
-        document.body.classList.remove("theme-light");
-        theme = 'dark';
-      }
-    }
-
-    async function getGeminiResponse(text) {
-      const apiKey = "AIzaSyBL4EVgiTniFY5KB_PhGIYtqJL3hT8wMXg"; // ← BURAYA YAPIŞTIR
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + apiKey;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          contents: [{parts: [{text}]}]
-        })
-      });
-      const data = await response.json();
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Bir sorun oluştu.";
-    }
-
-    function startCamera() {
+    async function startApp() {
+      document.getElementById("output").textContent = "Model yükleniyor...";
+      model = await cocoSsd.load();
+      document.getElementById("output").textContent = "Model yüklendi, kamera açılıyor...";
+      
       const video = document.getElementById("video");
-      video.style.display = "block";
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then((stream) => {
-          video.srcObject = stream;
-          // Gelecekte görüntü işleme buraya gelecek (örneğin TensorFlow.js ile)
-        })
-        .catch((err) => {
-          alert("Kamera açılırken hata oluştu: " + err.message);
-        });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      
+      video.onloadeddata = () => detectFrame(video);
+    }
+
+    async function detectFrame(video) {
+      const predictions = await model.detect(video);
+      let output = "";
+      predictions.forEach(p => {
+        const label = language === "tr" ? translateLabel(p.class) : p.class;
+        output += `${label} — %${Math.round(p.score * 100)}\n`;
+      });
+      document.getElementById("output").textContent = output || "Hiçbir obje algılanmadı.";
+      requestAnimationFrame(() => detectFrame(video));
+    }
+
+    function translateLabel(label) {
+      const dict = {
+        "person": "İnsan", "dog": "Köpek", "cat": "Kedi",
+        "cell phone": "Telefon", "bottle": "Şişe",
+        "car": "Araba", "chair": "Sandalye", "book": "Kitap"
+      };
+      return dict[label] || label;
+    }
+
+    function changeLang(lang) {
+      language = lang;
+    }
+
+    function changeTheme(theme) {
+      document.body.style.backgroundColor = theme === "light" ? "#f5f5f5" : "#121212";
+      document.body.style.color = theme === "light" ? "#111" : "#eee";
+    }
+
+    function startVoice() {
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance("Sesli sohbet etkin. Algılanan nesneler ekranda gösteriliyor.");
+      utterance.lang = language === "tr" ? "tr-TR" : "en-US";
+      synth.speak(utterance);
     }
   </script>
 </body>
